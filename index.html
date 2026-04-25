@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="אינטרקום">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.svg">
+<title>אינטרקום חי</title>
+<style>
+  :root {
+    --bg: #0f0f1a;
+    --surface: #1a1a2e;
+    --surface2: #16213e;
+    --accent: #0f3460;
+    --blue: #4a9eff;
+    --green: #00d4aa;
+    --red: #ff4757;
+    --amber: #ffa502;
+    --text: #e8e8f0;
+    --muted: #8888aa;
+    --border: rgba(255,255,255,0.08);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .app { width: 100%; max-width: 480px; }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .logo {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, var(--blue), var(--green));
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 28px;
+  }
+  .header h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; }
+  .header p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+  /* Status Bar */
+  .status-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .status-dot.red { background: var(--red); }
+  #status-text { color: var(--muted); flex: 1; }
+
+  /* Room Section */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .room-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  input[type="text"] {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'SF Mono', monospace;
+    letter-spacing: 2px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: var(--blue); }
+  input[type="text"]::placeholder { color: var(--muted); letter-spacing: 0; font-family: inherit; }
+
+  .btn {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-green { background: var(--green); color: #0a2a24; }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+
+  .room-id-display {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    text-align: center;
+    font-family: 'SF Mono', monospace;
+    font-size: 22px;
+    letter-spacing: 4px;
+    color: var(--blue);
+    margin-bottom: 10px;
+  }
+  .room-hint { font-size: 12px; color: var(--muted); text-align: center; }
+
+  /* Video Grid */
+  .video-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .video-wrap {
+    position: relative;
+    background: #000;
+    border-radius: var(--radius);
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    border: 1px solid var(--border);
+  }
+  .video-wrap.primary { grid-column: 1 / -1; aspect-ratio: 16/9; }
+  video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .video-label {
+    position: absolute;
+    bottom: 8px; right: 10px;
+    font-size: 11px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+  }
+  .video-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted);
+    gap: 8px;
+    font-size: 13px;
+  }
+  .video-placeholder .icon { font-size: 32px; opacity: 0.4; }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .ctrl-btn {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+    position: relative;
+  }
+  .ctrl-btn:active { transform: scale(0.93); }
+  .ctrl-btn.on { background: rgba(74,158,255,0.15); border: 1px solid rgba(74,158,255,0.3); }
+  .ctrl-btn.off { background: rgba(255,71,87,0.15); border: 1px solid rgba(255,71,87,0.3); }
+  .ctrl-btn.end { background: var(--red); width: 64px; height: 64px; font-size: 22px; }
+  .ctrl-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* Signal quality */
+  .signal-info {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .signal-info span { display: flex; align-items: center; gap: 4px; }
+
+  /* Mode toggle */
+  .mode-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .mode-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mode-btn.active {
+    background: rgba(74,158,255,0.15);
+    border-color: var(--blue);
+    color: var(--blue);
+    font-weight: 500;
+  }
+
+  /* Log */
+  .log {
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 11px;
+    font-family: monospace;
+    color: var(--muted);
+    max-height: 80px;
+    overflow-y: auto;
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+  .log-entry.ok { color: var(--green); }
+  .log-entry.err { color: var(--red); }
+  .log-entry.info { color: var(--blue); }
+
+  /* Hidden */
+  .hidden { display: none !important; }
+
+  /* Install banner */
+  .install-banner {
+    background: rgba(74,158,255,0.1);
+    border: 1px solid rgba(74,158,255,0.2);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .install-banner .icon { font-size: 24px; flex-shrink: 0; }
+
+  @media (max-width: 380px) {
+    .video-grid { grid-template-columns: 1fr; }
+    .video-wrap.primary { aspect-ratio: 4/3; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="logo">📡</div>
+    <h1>אינטרקום חי</h1>
+    <p>חיבור וידאו וקול בין מכשירים</p>
+  </div>
+
+  <!-- Install Banner -->
+  <div class="install-banner hidden" id="install-banner">
+    <div class="icon">📲</div>
+    <div style="flex:1">
+      <div style="font-weight:500;margin-bottom:2px">התקן כ-PWA</div>
+      <div style="color:var(--muted)">לחץ "הוסף למסך הבית" לגישה מהירה</div>
+    </div>
+    <button class="btn btn-blue" onclick="installPWA()" style="font-size:12px;padding:8px 12px">התקן</button>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text">לא מחובר</span>
+    <span id="connection-mode" style="font-size:11px;color:var(--muted)"></span>
+  </div>
+
+  <!-- Room Setup (visible before call) -->
+  <div id="setup-section">
+    <div class="card">
+      <div class="card-title">מצב חיבור</div>
+      <div class="mode-row">
+        <button class="mode-btn active" id="mode-create" onclick="setMode('create')">📋 צור חדר</button>
+        <button class="mode-btn" id="mode-join" onclick="setMode('join')">🔗 הצטרף לחדר</button>
+      </div>
+
+      <!-- Create Mode -->
+      <div id="create-panel">
+        <button class="btn btn-green" style="width:100%;margin-bottom:12px" onclick="createRoom()">צור חדר חדש</button>
+        <div id="room-display" class="hidden">
+          <div class="room-id-display" id="room-id-text">----</div>
+          <p class="room-hint">שתף את הקוד עם הצד השני ✓</p>
+          <p class="room-hint" style="margin-top:6px;color:var(--amber)">ממתין לחיבור...</p>
+        </div>
+      </div>
+
+      <!-- Join Mode -->
+      <div id="join-panel" class="hidden">
+        <div class="room-row">
+          <input type="text" id="room-input" placeholder="הכנס קוד חדר (4 ספרות)" maxlength="4" inputmode="numeric">
+          <button class="btn btn-blue" onclick="joinRoom()">הצטרף</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Media Permissions -->
+    <div class="card">
+      <div class="card-title">הרשאות מדיה</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="btn btn-outline" onclick="requestPermissions('video+audio')" id="btn-av">📷 מצלמה + מיק</button>
+        <button class="btn btn-outline" onclick="requestPermissions('audio')" id="btn-ao">🎙️ מיקרופון בלבד</button>
+      </div>
+      <div id="perm-status" style="font-size:12px;color:var(--muted);margin-top:10px;text-align:center">לא ניתנו הרשאות</div>
+    </div>
+  </div>
+
+  <!-- Call Section (visible during call) -->
+  <div id="call-section" class="hidden">
+
+    <!-- Video -->
+    <div class="video-grid" id="video-grid">
+      <div class="video-wrap primary" id="remote-wrap">
+        <div class="video-placeholder" id="remote-placeholder">
+          <div class="icon">👤</div>
+          <div>ממתין לצד השני...</div>
+        </div>
+        <video id="remote-video" autoplay playsinline class="hidden"></video>
+        <div class="video-label">צד שני</div>
+      </div>
+      <div class="video-wrap" id="local-wrap">
+        <div class="video-placeholder" id="local-placeholder">
+          <div class="icon">📵</div>
+          <div>אין מצלמה</div>
+        </div>
+        <video id="local-video" autoplay playsinline muted class="hidden"></video>
+        <div class="video-label">אני</div>
+      </div>
+    </div>
+
+    <!-- Signal Quality -->
+    <div class="signal-info" id="signal-info">
+      <span>📶 <span id="signal-quality">בודק...</span></span>
+      <span>⏱ <span id="call-timer">00:00</span></span>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="ctrl-btn on" id="btn-mic" onclick="toggleMic()" title="מיקרופון">🎙️</button>
+      <button class="ctrl-btn on" id="btn-cam" onclick="toggleCam()" title="מצלמה">📷</button>
+      <button class="ctrl-btn on" id="btn-speaker" onclick="toggleSpeaker()" title="רמקול">🔊</button>
+      <button class="ctrl-btn end" onclick="endCall()" title="סיים שיחה">📵</button>
+      <button class="ctrl-btn on" id="btn-switch" onclick="switchCamera()" title="החלף מצלמה">🔄</button>
+    </div>
+
+  </div>
+
+  <!-- Log -->
+  <div class="log" id="log"></div>
+
+</div>
+
+<script>
+// ===== SIGNALING via BroadcastChannel + localStorage (same-device) =====
+// ===== + Manual Signaling for cross-device (copy/paste SDP) ==========
+
+let localStream = null;
+let peerConnection = null;
+let roomId = null;
+let isHost = false;
+let micOn = true, camOn = true, speakerOn = true;
+let callStartTime = null;
+let timerInterval = null;
+let currentMode = 'create';
+let facingMode = 'user';
+let deferredInstall = null;
+
+const config = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:openrelay.metered.ca:80' },
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    }
+  ]
+};
+
+// ===== PWA Install =====
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstall = e;
+  document.getElementById('install-banner').classList.remove('hidden');
+});
+
+function installPWA() {
+  if (deferredInstall) {
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(() => {
+      document.getElementById('install-banner').classList.add('hidden');
+    });
+  }
+}
+
+// ===== Logging =====
+function log(msg, type='') {
+  const el = document.getElementById('log');
+  const d = document.createElement('div');
+  d.className = 'log-entry ' + type;
+  d.textContent = new Date().toLocaleTimeString('he-IL') + ' › ' + msg;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setStatus(text, dotClass='') {
+  document.getElementById('status-text').textContent = text;
+  const dot = document.getElementById('status-dot');
+  dot.className = 'status-dot ' + dotClass;
+}
+
+// ===== Mode =====
+function setMode(m) {
+  currentMode = m;
+  document.getElementById('mode-create').classList.toggle('active', m === 'create');
+  document.getElementById('mode-join').classList.toggle('active', m === 'join');
+  document.getElementById('create-panel').classList.toggle('hidden', m !== 'create');
+  document.getElementById('join-panel').classList.toggle('hidden', m !== 'join');
+}
+
+// ===== Media =====
+async function requestPermissions(type) {
+  try {
+    const constraints = type === 'video+audio'
+      ? { video: { facingMode }, audio: { echoCancellation: true, noiseSuppression: true } }
+      : { audio: { echoCancellation: true, noiseSuppression: true }, video: false };
+
+    if (localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+    }
+    localStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+    const localVid = document.getElementById('local-video');
+    localVid.srcObject = localStream;
+    localVid.classList.remove('hidden');
+    document.getElementById('local-placeholder').classList.add('hidden');
+
+    const hasVideo = localStream.getVideoTracks().length > 0;
+    document.getElementById('perm-status').textContent =
+      hasVideo ? '✓ מצלמה ומיקרופון פעילים' : '✓ מיקרופון פעיל';
+    document.getElementById('perm-status').style.color = 'var(--green)';
+
+    log('הרשאות מדיה ניתנו' + (hasVideo ? ' (וידאו + אודיו)' : ' (אודיו)'), 'ok');
+    setStatus('מדיה מוכנה', 'green');
+  } catch (e) {
+    log('שגיאת הרשאות: ' + e.message, 'err');
+    document.getElementById('perm-status').textContent = '✗ ' + e.message;
+    document.getElementById('perm-status').style.color = 'var(--red)';
+  }
+}
+
+async function switchCamera() {
+  facingMode = facingMode === 'user' ? 'environment' : 'user';
+  if (localStream && localStream.getVideoTracks().length > 0) {
+    await requestPermissions('video+audio');
+    if (peerConnection) {
+      const newTrack = localStream.getVideoTracks()[0];
+      const sender = peerConnection.getSenders().find(s => s.track?.kind === 'video');
+      if (sender) sender.replaceTrack(newTrack);
+    }
+    log('מצלמה הוחלפה', 'info');
+  }
+}
+
+// ===== Signaling via localStorage + StorageEvent =====
+// For same-device testing and cross-tab. For cross-device: manual SDP exchange.
+
+function storageKey(room, type) {
+  return `intercom_${room}_${type}`;
+}
+
+function writeSignal(room, type, data) {
+  const key = storageKey(room, type);
+  localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+  log(`📤 שלח ${type}`, 'info');
+}
+
+function readSignal(room, type) {
+  const key = storageKey(room, type);
+  const raw = localStorage.getItem(key);
+  if (!raw) return null;
+  try { return JSON.parse(raw).data; } catch { return null; }
+}
+
+function clearSignals(room) {
+  ['offer', 'answer', 'ice_host', 'ice_guest'].forEach(t => {
+    localStorage.removeItem(storageKey(room, t));
+  });
+}
+
+// ===== Room Management =====
+function generateRoomId() {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+function createRoom() {
+  roomId = generateRoomId();
+  isHost = true;
+  document.getElementById('room-id-text').textContent = roomId;
+  document.getElementById('room-display').classList.remove('hidden');
+  clearSignals(roomId);
+  setStatus('ממתין לחיבור: ' + roomId, 'amber');
+  log('חדר נוצר: ' + roomId, 'ok');
+
+  // Watch for answer
+  window.addEventListener('storage', onStorageSignal);
+  startOffer();
+}
+
+function joinRoom() {
+  const input = document.getElementById('room-input').value.trim();
+  if (input.length !== 4 || isNaN(input)) {
+    log('קוד חדר חייב להיות 4 ספרות', 'err');
+    return;
+  }
+  roomId = input;
+  isHost = false;
+  setStatus('מצטרף לחדר ' + roomId, 'amber');
+  log('מצטרף לחדר: ' + roomId, 'info');
+  window.addEventListener('storage', onStorageSignal);
+  waitForOffer();
+}
+
+// ===== WebRTC =====
+function createPeerConnection() {
+  if (peerConnection) peerConnection.close();
+  peerConnection = new RTCPeerConnection(config);
+
+  peerConnection.onicecandidate = e => {
+    if (e.candidate) {
+      const key = isHost ? 'ice_host' : 'ice_guest';
+      const existing = readSignal(roomId, key) || [];
+      const arr = Array.isArray(existing) ? existing : [];
+      arr.push(e.candidate.toJSON());
+      writeSignal(roomId, key, arr);
+    }
+  };
+
+  peerConnection.ontrack = e => {
+    log('מקבל מדיה מצד שני', 'ok');
+    const remoteVid = document.getElementById('remote-video');
+    remoteVid.srcObject = e.streams[0];
+    remoteVid.classList.remove('hidden');
+    document.getElementById('remote-placeholder').classList.add('hidden');
+    startCallTimer();
+  };
+
+  peerConnection.onconnectionstatechange = () => {
+    const s = peerConnection.connectionState;
+    log('מצב חיבור: ' + s, s === 'connected' ? 'ok' : s === 'failed' ? 'err' : 'info');
+    if (s === 'connected') {
+      setStatus('מחובר ✓', 'green');
+      monitorSignalQuality();
+    } else if (s === 'disconnected' || s === 'failed') {
+      setStatus('חיבור אבד', 'red');
+    }
+  };
+
+  peerConnection.oniceconnectionstatechange = () => {
+    document.getElementById('connection-mode').textContent =
+      peerConnection.iceConnectionState;
+  };
+
+  // Add local tracks
+  if (localStream) {
+    localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
+  }
+}
+
+async function startOffer() {
+  if (!localStream) {
+    log('⚠ אין מדיה - מנסה בלי וידאו', 'err');
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      log('לא ניתן לגשת למדיה', 'err');
+    }
+  }
+  createPeerConnection();
+  const offer = await peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+  await peerConnection.setLocalDescription(offer);
+  writeSignal(roomId, 'offer', offer);
+  showCallSection();
+}
+
+async function waitForOffer() {
+  showCallSection();
+  if (!localStream) {
+    try { localStream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch {}
+  }
+  createPeerConnection();
+
+  // Poll for offer (storage event may not fire cross-tab on same origin)
+  const pollOffer = setInterval(async () => {
+    const offer = readSignal(roomId, 'offer');
+    if (offer) {
+      clearInterval(pollOffer);
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      writeSignal(roomId, 'answer', answer);
+      log('Offer התקבל, Answer נשלח', 'ok');
+      pollIceCandidates('ice_host');
+    }
+  }, 1000);
+}
+
+async function onStorageSignal(e) {
+  if (!roomId) return;
+
+  if (isHost && e.key === storageKey(roomId, 'answer')) {
+    const answer = readSignal(roomId, 'answer');
+    if (answer && peerConnection.signalingState === 'have-local-offer') {
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      log('Answer התקבל', 'ok');
+      pollIceCandidates('ice_guest');
+    }
+  }
+
+  if (!isHost && e.key === storageKey(roomId, 'ice_host')) {
+    const candidates = readSignal(roomId, 'ice_host') || [];
+    for (const c of candidates) {
+      try { await peerConnection.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+    }
+  }
+
+  if (isHost && e.key === storageKey(roomId, 'ice_guest')) {
+    const candidates = readSignal(roomId, 'ice_guest') || [];
+    for (const c of candidates) {
+      try { await peerConnection.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+    }
+  }
+}
+
+let icePollTimer = null;
+function pollIceCandidates(key) {
+  let lastLen = 0;
+  icePollTimer = setInterval(async () => {
+    const candidates = readSignal(roomId, key) || [];
+    if (candidates.length > lastLen) {
+      for (let i = lastLen; i < candidates.length; i++) {
+        try { await peerConnection.addIceCandidate(new RTCIceCandidate(candidates[i])); } catch {}
+      }
+      lastLen = candidates.length;
+    }
+  }, 800);
+}
+
+// ===== UI =====
+function showCallSection() {
+  document.getElementById('setup-section').classList.add('hidden');
+  document.getElementById('call-section').classList.remove('hidden');
+
+  const localVid = document.getElementById('local-video');
+  if (localStream && localStream.getVideoTracks().length > 0) {
+    localVid.srcObject = localStream;
+    localVid.classList.remove('hidden');
+    document.getElementById('local-placeholder').classList.add('hidden');
+  }
+}
+
+function toggleMic() {
+  micOn = !micOn;
+  if (localStream) {
+    localStream.getAudioTracks().forEach(t => t.enabled = micOn);
+  }
+  const btn = document.getElementById('btn-mic');
+  btn.className = 'ctrl-btn ' + (micOn ? 'on' : 'off');
+  btn.textContent = micOn ? '🎙️' : '🔇';
+  log(micOn ? 'מיקרופון הופעל' : 'מיקרופון הושתק', 'info');
+}
+
+function toggleCam() {
+  camOn = !camOn;
+  if (localStream) {
+    localStream.getVideoTracks().forEach(t => t.enabled = camOn);
+  }
+  const btn = document.getElementById('btn-cam');
+  btn.className = 'ctrl-btn ' + (camOn ? 'on' : 'off');
+  btn.textContent = camOn ? '📷' : '🚫';
+  log(camOn ? 'מצלמה הופעלה' : 'מצלמה כובתה', 'info');
+}
+
+function toggleSpeaker() {
+  speakerOn = !speakerOn;
+  const remoteVid = document.getElementById('remote-video');
+  remoteVid.muted = !speakerOn;
+  const btn = document.getElementById('btn-speaker');
+  btn.className = 'ctrl-btn ' + (speakerOn ? 'on' : 'off');
+  btn.textContent = speakerOn ? '🔊' : '🔈';
+}
+
+function endCall() {
+  if (peerConnection) { peerConnection.close(); peerConnection = null; }
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  if (icePollTimer) { clearInterval(icePollTimer); }
+  if (timerInterval) { clearInterval(timerInterval); }
+  if (roomId) { clearSignals(roomId); }
+  window.removeEventListener('storage', onStorageSignal);
+
+  document.getElementById('remote-video').srcObject = null;
+  document.getElementById('local-video').srcObject = null;
+  document.getElementById('remote-video').classList.add('hidden');
+  document.getElementById('local-video').classList.add('hidden');
+  document.getElementById('remote-placeholder').classList.remove('hidden');
+  document.getElementById('local-placeholder').classList.remove('hidden');
+
+  document.getElementById('call-section').classList.add('hidden');
+  document.getElementById('setup-section').classList.remove('hidden');
+  document.getElementById('room-display').classList.add('hidden');
+  document.getElementById('room-input').value = '';
+
+  setStatus('שיחה הסתיימה', '');
+  log('שיחה הסתיימה', 'info');
+  roomId = null;
+}
+
+function startCallTimer() {
+  callStartTime = Date.now();
+  timerInterval = setInterval(() => {
+    const sec = Math.floor((Date.now() - callStartTime) / 1000);
+    const m = String(Math.floor(sec / 60)).padStart(2, '0');
+    const s = String(sec % 60).padStart(2, '0');
+    document.getElementById('call-timer').textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function monitorSignalQuality() {
+  setInterval(async () => {
+    if (!peerConnection) return;
+    try {
+      const stats = await peerConnection.getStats();
+      stats.forEach(r => {
+        if (r.type === 'candidate-pair' && r.state === 'succeeded') {
+          const rtt = Math.round((r.currentRoundTripTime || 0) * 1000);
+          let q = rtt < 80 ? '🟢 מצוין' : rtt < 200 ? '🟡 טוב' : '🔴 חלש';
+          document.getElementById('signal-quality').textContent = q + ` (${rtt}ms)`;
+        }
+      });
+    } catch {}
+  }, 3000);
+}
+
+// Service Worker registration
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js')
+    .then(() => log('PWA Service Worker פעיל', 'ok'))
+    .catch(() => {});
+}
+
+log('מערכת אינטרקום מוכנה', 'ok');
+log('ודא שהצד השני פותח את אותה כתובת URL', 'info');
+</script>
+</body>
+</html>
